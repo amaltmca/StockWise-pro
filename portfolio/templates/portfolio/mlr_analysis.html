@@ -1,0 +1,116 @@
+{% extends 'portfolio/base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-graph-up-arrow text-primary me-2"></i>{{ ticker }} Analysis</h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary rounded-pill">Back to Portfolio</a>
+    </div>
+
+    <div id="mlrBridge" data-history="{{ history|safe }}" data-prediction="{{ prediction_point }}"
+        data-sensitivity="{{ sensitivity }}" style="display: none;"></div>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100 p-3 text-center">
+                <p class="text-muted small fw-bold text-uppercase mb-1">Estimated Price Range</p>
+                <h3 class="text-success fw-bold mb-3">₹{{ pred_low|floatformat:2 }} - ₹{{ pred_high|floatformat:2 }}
+                </h3>
+                <hr>
+                <p class="text-muted small fw-bold text-uppercase mb-1">Market Sensitivity</p>
+                <h2 class="text-primary">{{ sensitivity }}<small class="text-muted fs-6"> / 10</small></h2>
+                <div class="progress" style="height: 10px; border-radius: 5px;">
+                    <div id="senBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 fw-bold">Multiple Regression Indicators</div>
+                <div class="card-body">
+                    <table class="table table-borderless align-middle">
+                        <thead>
+                            <tr class="text-muted small">
+                                <th>INDICATOR</th>
+                                <th>INFLUENCE</th>
+                                <th class="text-end">WEIGHT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for factor in factors %}
+                            <tr>
+                                <td class="fw-bold">{{ factor.name }}</td>
+                                <td>
+                                    {% if factor.impact > 0 %}
+                                    <span class="badge bg-success-subtle text-success">+ Positive</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger">- Negative</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold font-monospace">{{ factor.impact }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm border-0 p-3">
+                <h6 class="fw-bold mb-3">Historical Trend vs MLR Prediction</h6>
+                <div style="height: 350px;"><canvas id="mlrChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    (function () {
+        const bridge = document.getElementById('mlrBridge');
+        if (!bridge) return;
+
+        const history = JSON.parse(bridge.getAttribute('data-history'));
+        const prediction = parseFloat(bridge.getAttribute('data-prediction'));
+        const sensitivity = parseFloat(bridge.getAttribute('data-sensitivity'));
+
+        // Update Sensitivity UI
+        document.getElementById('senBar').style.width = (sensitivity * 10) + "%";
+
+        // Setup Chart
+        const ctx = document.getElementById('mlrChart').getContext('2d');
+        const labels = history.map((_, i) => "Day " + (i + 1));
+        labels.push("Prediction");
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'History',
+                        data: [...history, null],
+                        borderColor: '#0d6efd',
+                        tension: 0.3,
+                        fill: false
+                    },
+                    {
+                        label: 'MLR Predicted Next Day',
+                        data: Array(history.length - 1).fill(null).concat([history[history.length - 1], prediction]),
+                        borderColor: '#198754',
+                        borderDash: [5, 5],
+                        pointRadius: 7,
+                        pointBackgroundColor: '#198754'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: true } }
+            }
+        });
+    })();
+</script>
+{% endblock %}

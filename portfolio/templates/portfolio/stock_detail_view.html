@@ -1,0 +1,142 @@
+{% extends 'portfolio/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+
+    <div class="mb-4">
+        <h2 class="display-5 fw-bold">{{ info.longName|default:stock.ticker }}</h2>
+        <p class="lead text-muted">{{ stock.ticker }}</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+
+                    <div id="echart_main" style="height: 500px; width: 100%;"></div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Your Position</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Quantity:</span>
+                        <strong>{{ stock.quantity|floatformat:2 }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Purchase Price:</span>
+                        <strong>₹{{ stock.purchase_price|floatformat:2 }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Purchase Date:</span>
+                        <strong>{{ stock.purchase_date }}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">About {{ info.shortName|default:"Company" }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        {% if info.longBusinessSummary %}
+                        {{ info.longBusinessSummary|truncatewords:100 }}
+                        {% else %}
+                        No summary available.
+                        {% endif %}
+                    </p>
+                    <hr>
+                    <p class="small"><strong>Industry:</strong> {{ info.industry|default:"N/A" }}</p>
+                    <p class="small"><strong>Sector:</strong> {{ info.sector|default:"N/A" }}</p>
+                    <p class="small"><strong>Website:</strong> <a href="{{ info.website|default:'#' }}"
+                            target="_blank">{{ info.website|default:"N/A" }}</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+{{ chart_dates|json_script:"chart-dates-data" }}
+{{ chart_data|json_script:"chart-ohlc-data" }}
+
+<script type="text/javascript">
+    // Get the theme from the <html> tag
+    const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+    const chartTheme = (currentTheme === 'dark') ? 'dark' : 'light';
+
+    // Initialize ECharts
+    var myChart = echarts.init(document.getElementById('echart_main'), chartTheme);
+
+    // Get the data from the new <script> tags
+    const dates = JSON.parse(document.getElementById('chart-dates-data').textContent);
+    const data = JSON.parse(document.getElementById('chart-ohlc-data').textContent);
+
+    // Define the chart options
+    var option = {
+        tooltip: {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross'
+            }
+        },
+        grid: {
+            left: '10%',
+            right: '10%',
+            bottom: '15%'
+        },
+        xAxis: {
+            type: 'category',
+            data: dates,
+            scale: true,
+        },
+        yAxis: {
+            scale: true,
+            splitArea: {
+                show: true
+            }
+        },
+        dataZoom: [
+            {
+                type: 'inside',
+                start: 50,
+                end: 100
+            },
+            {
+                show: true,
+                type: 'slider',
+                bottom: '5%',
+                start: 50,
+                end: 100
+            }
+        ],
+        series: [
+            {
+                name: 'Candlestick',
+                type: 'candlestick',
+                data: data,
+                itemStyle: {
+                    color: '#28a745', // bullish
+                    color0: '#dc3545', // bearish
+                    borderColor: '#28a745',
+                    borderColor0: '#dc3545'
+                }
+            }
+        ]
+    };
+
+    // Apply the options to the chart
+    myChart.setOption(option);
+
+    // Make it responsive
+    window.addEventListener('resize', myChart.resize);
+</script>
+{% endblock %}

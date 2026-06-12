@@ -1,0 +1,198 @@
+{% extends 'portfolio/base.html' %}
+{% load static %}
+
+{% block title %}Welcome to StockWise{% endblock %}
+
+{% block extra_head %}
+{# --- CSS for Background Image and Overlay --- #}
+<style>
+    /* ... (Existing styles for .welcome-card, etc.) ... */
+    .welcome-card {
+        position: relative; overflow: hidden; color: white;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.5); min-height: 60vh;
+        display: flex; align-items: center;
+    }
+    .welcome-card-bg-image {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background-image: url("{% static 'portfolio/img/stock_background1.jpg' %}");
+        background-size: cover; background-position: center;
+        filter: brightness(0.5) contrast(1.1); z-index: 1;
+    }
+    .welcome-card-overlay {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(60deg, rgba(var(--bs-primary-rgb), 0.65), rgba(var(--bs-secondary-rgb), 0.55));
+        z-index: 2; opacity: 0.9;
+    }
+    .welcome-card-content { position: relative; z-index: 3; padding: 4rem; }
+    .welcome-card-content .btn-outline-light {
+        border-width: 2px; --bs-btn-hover-bg: rgba(255, 255, 255, 0.15);
+         --bs-btn-hover-border-color: var(--bs-light);
+    }
+    .welcome-card-content .btn { font-weight: 500; }
+
+    /* --- Styles for Feature Cards --- */
+    .feature-icon {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 3rem; height: 3rem; font-size: 1.5rem; margin-bottom: 1rem;
+    }
+
+    /* --- NEW: Styles for Animation --- */
+    .feature-card {
+        opacity: 0; /* Start hidden */
+        transform: translateY(30px); /* Start slightly lower */
+        transition: opacity 0.6s ease-out, transform 0.6s ease-out; /* Define transition */
+    }
+    .feature-card.visible {
+        opacity: 1; /* Fade in */
+        transform: translateY(0); /* Slide up to original position */
+    }
+    /* --- End New Styles --- */
+
+</style>
+{% endblock %}
+
+{% block content %}
+{# --- Welcome Banner Section --- #}
+<div class="container-fluid px-0">
+    <div class="row g-0 justify-content-center">
+        <div class="col-12">
+            <div class="card welcome-card text-white shadow-lg border-0 rounded-0">
+                <div class="welcome-card-bg-image"></div>
+                <div class="welcome-card-overlay"></div>
+                <div class="welcome-card-content text-center col-lg-8 col-md-10 mx-auto">
+                    <h1 class="display-3 fw-bold mb-4">Welcome to StockWise</h1>
+                    <p class="lead mb-5">
+                        Your intelligent partner for navigating the stock market. Track your portfolio, explore new opportunities,
+                        analyze risks, and set financial goals all in one place.
+                    </p>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg rounded-pill px-4 py-2 me-sm-2 mb-2 mb-sm-0">
+                            Go to Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                        <a href="{% url 'explore' %}" class="btn btn-outline-light btn-lg rounded-pill px-4 py-2">
+                            Explore Stocks <i class="bi bi-search ms-1"></i>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn btn-primary btn-lg rounded-pill px-4 py-2 me-sm-2 mb-2 mb-sm-0">
+                            Get Started Free <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg rounded-pill px-4 py-2">
+                            Login <i class="bi bi-box-arrow-in-right ms-1"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# --- Features Section --- #}
+<div class="container py-5">
+    <h2 class="text-center mb-5 display-5 fw-bold">Features Tailored For You </h2>
+    <div class="row g-4 justify-content-center">
+
+        {# Add class="feature-card" to each column div #}
+        <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-primary bg-gradient text-white rounded-3"> <i class="bi bi-briefcase-fill"></i> </div>
+                    <h5 class="card-title fw-bold">Portfolio Management</h5>
+                    <p class="card-text text-muted">Easily add, edit, and view your stock positions. Keep track of purchase prices, quantities, and dates.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-success bg-gradient text-white rounded-3"> <i class="bi bi-graph-up-arrow"></i> </div>
+                    <h5 class="card-title fw-bold">Real-Time Valuation</h5>
+                    <p class="card-text text-muted">See your portfolio's current market value and track overall gains or losses instantly.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-warning bg-gradient text-dark rounded-3"> <i class="bi bi-shield-check"></i> </div>
+                    <h5 class="card-title fw-bold">Risk Analysis</h5>
+                    <p class="card-text text-muted">Understand your portfolio's risk profile with metrics like Beta and Volatility compared to the market.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-info bg-gradient text-white rounded-3"> <i class="bi bi-bullseye"></i> </div>
+                    <h5 class="card-title fw-bold">Goal Tracker</h5>
+                    <p class="card-text text-muted">Set financial targets (e.g., retirement, down payment) and monitor your progress towards achieving them.</p>
+                </div>
+            </div>
+        </div>
+
+         <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-danger bg-gradient text-white rounded-3"> <i class="bi bi-bell-fill"></i> </div>
+                    <h5 class="card-title fw-bold">Smart Alerts</h5>
+                    <p class="card-text text-muted">Set thresholds and get notified (via background tasks*) about significant changes, like high portfolio risk.</p>
+                     <small class="text-muted">*Requires background task setup.</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4 feature-card">
+            <div class="card h-100 shadow-sm border-0 text-center">
+                <div class="card-body">
+                    <div class="feature-icon bg-secondary bg-gradient text-white rounded-3"> <i class="bi bi-file-earmark-arrow-down-fill"></i> </div>
+                    <h5 class="card-title fw-bold">Downloadable Reports</h5>
+                    <p class="card-text text-muted">Export your current portfolio holdings and performance data easily into CSV or PDF formats.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{# --- NEW: JavaScript for Animation --- #}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const featureCards = document.querySelectorAll('.feature-card');
+
+    // Options for the Intersection Observer
+    const options = {
+        root: null, // relative to document viewport
+        rootMargin: '0px', // margin around root
+        threshold: 0.1 // 10% of item has to be visible to trigger
+    };
+
+    // Callback function to execute when an element intersects
+    const callback = (entries, observer) => {
+        entries.forEach(entry => {
+            // If the element is intersecting (visible)
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                // Optional: Stop observing the element once it's visible
+                // observer.unobserve(entry.target);
+            }
+            // Optional: Remove 'visible' class if element scrolls out of view
+            // else {
+            //     entry.target.classList.remove('visible');
+            // }
+        });
+    };
+
+    // Create a new Intersection Observer instance
+    const observer = new IntersectionObserver(callback, options);
+
+    // Start observing each feature card
+    featureCards.forEach(card => {
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %}

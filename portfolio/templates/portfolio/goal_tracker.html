@@ -1,0 +1,104 @@
+{% extends 'portfolio/base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %} {# Ensure humanize is loaded #}
+
+{% block title %}Goal Tracker{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-lg-top" style="top: 80px;"> <div class="card-body">
+                    <h2 class="card-title h4 mb-3">Add New Goal</h2>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle-fill me-1"></i> Add Goal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <h2 class="mb-4">Your Financial Goals</h2>
+
+             {% if not goals %}
+                <div class="card card-body text-center shadow-sm">
+                     <p class="text-muted mb-0">You haven't added any goals yet. Use the form to get started!</p>
+                </div>
+            {% else %}
+                 <p class="text-muted mb-3">
+                     Overall Portfolio Value: <strong class="text-body">₹{{ total_portfolio_value|floatformat:2|intcomma }}</strong>
+                 </p>
+                {% for item in goals %}
+                    <div class="card mb-4 shadow-sm {% if item.is_complete %} border-success border-2 {% endif %}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="card-title mb-1 {% if item.is_complete %} text-success {% endif %}">
+                                         {% if item.is_complete %} <i class="bi bi-check-circle-fill me-1"></i> {% endif %}
+                                         {{ item.goal.name }}
+                                    </h5>
+                                    <p class="card-subtitle text-muted small">
+                                        Target: ₹{{ item.goal.target_amount|floatformat:2|intcomma }}
+                                        {% if item.goal.target_date %} by {{ item.goal.target_date|date:"d M Y" }} {% endif %}
+                                    </p>
+                                    {% if item.goal.linked_stock %}
+                                        <p class="card-subtitle text-info small mb-0 mt-1" data-bs-toggle="tooltip" title="{{ item.value_source_label }}">
+                                            <i class="bi bi-link-45deg"></i> Linked to {{ item.goal.linked_stock.ticker }}
+                                        </p>
+                                    {% else %}
+                                         <p class="card-subtitle text-secondary small mb-0 mt-1" data-bs-toggle="tooltip" title="{{ item.value_source_label }}">
+                                             <i class="bi bi-collection-fill"></i> Based on Total Portfolio
+                                         </p>
+                                    {% endif %}
+                                </div>
+                                <div class="dropdown action-dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary rounded-circle" type="button" id="goalAction{{ item.goal.id }}" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px; padding: 0;">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="goalAction{{ item.goal.id }}">
+                                        <li><a class="dropdown-item" href="{% url 'edit_goal' item.goal.id %}"><i class="bi bi-pencil-fill me-2"></i>Edit</a></li>
+                                        <li><a class="dropdown-item text-danger" href="{% url 'delete_goal' item.goal.id %}"><i class="bi bi-trash-fill me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="progress" role="progressbar" aria-label="Goal progress" aria-valuenow="{{ item.progress|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100" style="height: 25px;">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated {% if item.is_complete %} bg-success {% else %} bg-primary {% endif %}"
+                                     style="width: {{ item.progress|floatformat:1 }}%">
+                                    {{ item.progress|floatformat:1 }}%
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted">
+                                    Current: ₹{{ item.current_value_for_goal|floatformat:2|intcomma }}
+                                </small>
+                                <small class="text-muted">
+                                    Target: ₹{{ item.goal.target_amount|floatformat:2|intcomma }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Optional: Initialize tooltips if you added any new ones
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+});
+</script>
+{% endblock %}

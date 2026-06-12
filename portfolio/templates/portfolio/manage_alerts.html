@@ -1,0 +1,93 @@
+{% extends 'portfolio/base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %} {% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <h2 class="mb-4">Manage Alert Thresholds</h2>
+
+            <div class.card-body mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Add New Threshold</h5>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <div class="d-grid mt-3">
+                            <button type="submit" class="btn btn-primary">Save Threshold</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-medium"> Your Current Thresholds
+                </div>
+                {% if thresholds %}
+                <ul class="list-group list-group-flush">
+                    {% for threshold in thresholds %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge bg-secondary me-2">{{ threshold.get_threshold_type_display }}</span>
+                            <strong class="fs-5">{{ threshold.threshold_value|floatformat:2 }}</strong>
+                            {% if threshold.linked_stock %}
+                                <span class="text-muted small">(for {{ threshold.linked_stock.ticker }})</span>
+                            {% endif %}
+                            <br>
+                            <small class="text-muted">Set on: {{ threshold.created_at|date:"d M Y" }}</small>
+                        </div>
+                        <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this threshold?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="threshold_id" value="{{ threshold.id }}">
+                            <button type="submit" name="delete_threshold" class="btn btn-sm btn-outline-danger" title="Delete Threshold">
+                                <i class="bi bi-trash"></i> <span class="visually-hidden">Delete</span>
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="card-body text-center">
+                    <p class="text-muted mb-0">You haven't set any alert thresholds yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <h2 class="mb-4">Notifications</h2>
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-medium d-flex justify-content-between align-items-center"> <span>Recent Alerts</span>
+                   </div>
+                {% if notifications %}
+                <div style="max-height: 65vh; overflow-y: auto;"> <ul class="list-group list-group-flush">
+                        {% for notification in notifications %}
+                        <li class="list-group-item {% if not notification.is_read %} list-group-item-info {% else %} list-group-item-light text-muted {% endif %}"> <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1 me-2"> <p class="mb-1 {% if notification.is_read %} text-body-secondary {% endif %}">{{ notification.message }}</p> <small class="text-muted" title="{{ notification.created_at|date:'d M Y, P T' }}"> {{ notification.created_at|naturaltime }}
+                                    </small>
+                                </div>
+                                {% if not notification.is_read %}
+                                    <form action="{% url 'mark_notification_read' notification.id %}" method="get" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Mark as Read">
+                                            <i class="bi bi-check-lg"></i> <span class="visually-hidden">Mark as Read</span>
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted" title="Read"><i class="bi bi-check2-all"></i></span> {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% else %}
+                 <div class="card-body text-center">
+                    <p class="text-muted mb-0">No notifications yet.</p>
+                </div>
+                {% endif %}
+             </div>
+        </div>
+    </div>
+    <div class="alert alert-warning mt-4 small shadow-sm" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i> Alert thresholds help you stay informed about significant price movements in your stocks. You will receive notifications when the stock prices cross the set thresholds.
+    </div>
+</div>
+{% endblock %}

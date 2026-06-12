@@ -1,0 +1,197 @@
+{% extends 'portfolio/base.html' %}
+{% load humanize %}
+{% url 'stock_detail' item.symbol.ticker %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-8 border-end">
+            <h2 class="mb-4 fw-bold">Explore Stocks</h2>
+
+            <form method="get" class="row g-3 mb-4 align-items-center">
+                <div class="col-md-9">
+                    <label for="searchQuery" class="visually-hidden">Search Ticker or Name</label>
+                    <input type="text" class="form-control shadow-sm" id="searchQuery" name="q"
+                        placeholder="Search Ticker or Company Name (e.g. RELIANCE)..." value="{{ query }}">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                        <i class="bi bi-search me-2"></i>Search Stocks
+                    </button>
+                </div>
+            </form>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <span class="text-muted small fw-bold">SEARCH RESULTS</span>
+                    <div class="mt-1 text-dark">
+                        Found {{ total_symbols|intcomma }} symbols
+                        {% if page_obj %}
+                        <span class="text-muted ms-2">(showing {{ page_obj.start_index }} - {{ page_obj.end_index
+                            }})</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if symbols_with_prices %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ticker</th>
+                                <th>Company Name</th>
+                                <th class="text-end px-4">Current Price (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in symbols_with_prices %}
+                            <tr>
+                                <td class="fw-bold text-primary">{{ item.symbol.ticker }}</td>
+                                <td>
+                                    <a href="{% url 'stock_detail' item.symbol.ticker %}"
+                                        class="text-decoration-none text-dark fw-medium">
+                                        {{ item.symbol.name }}
+                                    </a>
+                                </td>
+                                <td class="text-end px-4 fw-bold">
+                                    {% if item.current_price is not None %}
+                                    {{ item.current_price|floatformat:2|intcomma }}
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-search text-muted display-4"></i>
+                    <p class="text-muted mt-3 mb-0">No stocks found matching your criteria.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination pagination-sm justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1&q={{ query }}">First</a></li>
+                    <li class="page-item"><a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}&q={{ query }}">Prev</a></li>
+                    {% endif %}
+
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}&q={{ query }}">Next</a></li>
+                    <li class="page-item"><a class="page-link"
+                            href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}">Last</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4 bg-light px-4 py-3">
+            <div class="mb-4">
+                <h4 class="fw-bold mb-0">Market Movers <span class="badge bg-dark fs-6 ms-2">ML Predicted</span></h4>
+                <p class="small text-muted mt-2">
+                    Classification based on Logistic Regression using 5-day momentum, volatility, and volume spikes.
+                </p>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-success text-white py-2">
+                    <h6 class="mb-0 small fw-bold"><i class="bi bi-graph-up-arrow me-2"></i>TOP 20 PREDICTED GAINERS
+                    </h6>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 380px; overflow-y: auto;">
+                    {% for stock in top_gainers %}
+                    <a href="{% url 'stock_detail' stock.ticker %}" class="list-group-item list-group-item-action py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="max-width: 70%;">
+                                <div class="fw-bold text-dark text-truncate">{{ stock.name }}</div>
+                                <small class="text-muted fw-bold">{{ stock.ticker }}</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success">
+                                {{ stock.prob|floatformat:1 }}% Prob
+                            </span>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted small py-4">No gainers classified</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-danger text-white py-2">
+                    <h6 class="mb-0 small fw-bold"><i class="bi bi-graph-down-arrow me-2"></i>TOP 20 PREDICTED LOSERS
+                    </h6>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 380px; overflow-y: auto;">
+                    {% for stock in top_losers %}
+                    <a href="{% url 'stock_detail' stock.ticker %}" class="list-group-item list-group-item-action py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div style="max-width: 70%;">
+                                <div class="fw-bold text-dark text-truncate">{{ stock.name }}</div>
+                                <small class="text-muted fw-bold">{{ stock.ticker }}</small>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger border border-danger">
+                                {{ stock.prob|floatformat:1 }}% Risk
+                            </span>
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="list-group-item text-center text-muted small py-4">No losers classified</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="p-3 bg-white rounded border border-warning shadow-sm">
+                <h6 class="fw-bold text-warning small mb-1"><i class="bi bi-cpu me-1"></i> Why these stocks?</h6>
+                <p class="mb-0 x-small text-muted">
+                    Our Logistic Regression model calculates the probability of movement. A probability
+                    <strong>&ge; 0.5</strong> classifies a stock as a gainer.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .x-small {
+        font-size: 0.75rem;
+    }
+
+    .border-end {
+        border-right: 1px solid #dee2e6 !important;
+    }
+
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+        transition: 0.2s;
+    }
+
+    /* Custom Scrollbar for the Movers lists */
+    .list-group::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .list-group::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .list-group::-webkit-scrollbar-thumb {
+        background: #ccc;
+        border-radius: 10px;
+    }
+
+    .list-group::-webkit-scrollbar-thumb:hover {
+        background: #bbb;
+    }
+</style>
+{% endblock %}

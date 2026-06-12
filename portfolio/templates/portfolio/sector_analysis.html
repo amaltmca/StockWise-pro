@@ -1,0 +1,179 @@
+{% extends 'portfolio/base.html' %}
+{% block content %}
+<div class="container py-4">
+
+    <div class="row mb-4 align-items-center">
+        <div class="col-lg-7">
+            <h2 class="fw-bold mb-1">Sector Momentum: <span class="text-primary">{{ sector }}</span></h2>
+            <p class="text-muted">
+                Mathematical trend analysis using Polynomial Regression
+                <span class="badge bg-secondary">Degree {{ current_degree }}</span>
+            </p>
+        </div>
+        <div class="col-lg-5 text-end">
+            <div class="btn-group shadow-sm">
+                <span class="btn btn-light disabled border-end d-none d-sm-block">Complexity:</span>
+                {% with d_str=current_degree|stringformat:"s" %}
+                <a href="?sector={{ sector }}&degree=1"
+                    class="btn btn-outline-primary {% if d_str == '1' %}active{% endif %}">Linear</a>
+                <a href="?sector={{ sector }}&degree=2"
+                    class="btn btn-outline-primary {% if d_str == '2' %}active{% endif %}">Quadratic</a>
+                <a href="?sector={{ sector }}&degree=3"
+                    class="btn btn-outline-primary {% if d_str == '3' %}active{% endif %}">Cubic</a>
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="list-group list-group-flush rounded">
+                    <div class="list-group-item bg-dark text-white fw-bold py-3">Market Sectors</div>
+                    {% for s in sectors_list %}
+                    <a href="?sector={{ s }}&degree={{ current_degree }}"
+                        class="list-group-item list-group-item-action {% if sector == s %}active bg-primary border-primary{% endif %} d-flex justify-content-between align-items-center">
+                        {{ s }} <i class="bi bi-chevron-right small"></i>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm bg-primary text-white p-3 mb-4">
+                <div class="small opacity-75">Forecasted 7-Day Move</div>
+                <div class="h3 fw-bold mb-0" id="forecast-percent">+0.00%</div>
+                <div class="small mt-1"><i class="bi bi-cpu"></i> Polynomial Projection</div>
+            </div>
+
+            <div class="card border-0 shadow-sm p-3 mb-4 text-center">
+                <div class="small text-muted text-uppercase fw-bold">Model Confidence (R²)</div>
+                <div class="h4 fw-bold text-success mb-0">{{ accuracy }}%</div>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ accuracy }}%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <div style="height: 450px;">
+                        <canvas id="sectorTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="fw-bold text-uppercase text-muted small mb-3">Constituent Stocks Analyzed</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for ticker in sector_tickers %}
+                        <span class="badge bg-white text-dark border py-2 px-3 fw-normal">
+                            <span class="text-primary fw-bold">#</span> {{ ticker }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ historical_data|json_script:"h-data" }}
+{{ predictions|json_script:"p-data" }}
+{{ dates|json_script:"d-data" }}
+{{ future_dates|json_script:"f-data" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Parse data from script tags
+    const rawHist = JSON.parse(document.getElementById('h-data').textContent);
+    const rawPred = JSON.parse(document.getElementById('p-data').textContent);
+    const dLabels = JSON.parse(document.getElementById('d-data').textContent);
+    const fLabels = JSON.parse(document.getElementById('f-data').textContent);
+
+    // Normalize Data to Cumulative Growth %
+    const contextCount = 10; // Show last 10 days instead of 5
+    const basePrice = rawHist[0];
+    const hist = rawHist.map(price => ((price - basePrice) / basePrice) * 100);
+    const pred = rawPred.map(price => ((price - basePrice) / basePrice) * 100);
+
+    // Update Forecast UI
+    const lastHist = hist[hist.length - 1];
+    const lastPred = pred[pred.length - 1];
+    const move = (lastPred - lastHist).toFixed(2);
+
+    const forecastEl = document.getElementById('forecast-percent');
+    forecastEl.innerText = (move > 0 ? '+' : '') + move + '%';
+    forecastEl.className = 'h3 fw-bold mb-0 ' + (move >= 0 ? 'text-white' : 'text-warning');
+
+    // Render Chart
+    const ctx = document.getElementById('sectorTrendChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [...dLabels, ...fLabels],
+            datasets: [
+                {
+                    label: 'Historical Performance (%)',
+                    data: hist,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.05)',
+                    fill: true,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    borderWidth: 3
+                },
+                {
+                    label: 'Polynomial Forecast',
+                    data: Array(hist.length - 1).fill(null).concat([hist[hist.length - 1], ...pred]),
+                    borderColor: '#dc3545',
+                    borderDash: [5, 5],
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#dc3545',
+                    tension: 0.4 // Smooths out the polynomial curve
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { usePointStyle: true } },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: (ctx) => `Growth: ${ctx.raw.toFixed(2)}%`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    ticks: { callback: v => v.toFixed(1) + '%' },
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    title: { display: true, text: 'Cumulative Sector Return' }
+                },
+                x: {
+                    ticks: { maxTicksLimit: 12 },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+</script>
+
+<style>
+    /* Prevent text selection on chart interactive elements */
+    canvas {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .list-group-item.active {
+        transition: all 0.2s ease;
+    }
+</style>
+
+{% endblock %}

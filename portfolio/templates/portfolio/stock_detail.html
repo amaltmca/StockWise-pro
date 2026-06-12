@@ -1,0 +1,139 @@
+{% extends 'portfolio/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="mb-4">
+        <h2 class="display-5 fw-bold">{{ info.longName|default:info.symbol|default:ticker }}</h2>
+        <p class="lead text-muted">{{ info.symbol|default:ticker }}</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div id="echart_main" style="height: 500px; width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Your Position</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Current Price:</span>
+                        <strong>₹{{ info.currentPrice|default:info.regularMarketPrice|floatformat:2 }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Quantity:</span>
+                        <strong>{{ stock.quantity|default:"0.00" }}</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>Purchase Price:</span>
+                        <strong>₹{{ stock.purchase_price|default:"0.00" }}</strong>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">About {{ info.shortName|default:"Company" }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">
+                        {% if info.longBusinessSummary %}
+                        {{ info.longBusinessSummary|truncatewords:80 }}
+                        {% else %}
+                        No summary available.
+                        {% endif %}
+                    </p>
+                    <hr>
+                    <p class="small mb-1"><strong>Industry:</strong> {{ info.industry|default:"N/A" }}</p>
+                    <p class="small mb-1"><strong>Sector:</strong> {{ info.sector|default:"N/A" }}</p>
+                    <p class="small"><strong>Website:</strong>
+                        {% if info.website %}
+                        <a href="{{ info.website }}" target="_blank">Visit Site</a>
+                        {% else %}N/A{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+
+{{ chart_dates|json_script:"chart-dates-data" }}
+{{ chart_data|json_script:"chart-ohlc-data" }}
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        const currentTheme = document.documentElement.getAttribute('data-bs-theme') || 'light';
+        const chartTheme = (currentTheme === 'dark') ? 'dark' : 'light';
+
+        const chartDom = document.getElementById('echart_main');
+        var myChart = echarts.init(chartDom, chartTheme);
+
+        const dates = JSON.parse(document.getElementById('chart-dates-data').textContent);
+        const rawData = JSON.parse(document.getElementById('chart-ohlc-data').textContent);
+
+        if (!rawData || rawData.length === 0) {
+            chartDom.innerHTML = "<div class='text-center mt-5'><p class='text-muted'>No price data available for {{ info.symbol }}</p></div>";
+            return;
+        }
+
+        // AUTO-DETECT: Check if data is OHLC (nested list) or Line (single values)
+        const isOHLC = Array.isArray(rawData[0]);
+        const seriesType = isOHLC ? 'candlestick' : 'line';
+
+        var option = {
+            tooltip: {
+                trigger: 'axis',
+                axisPointer: { type: 'cross' }
+            },
+            grid: { left: '10%', right: '5%', bottom: '15%', top: '10%' },
+            xAxis: {
+                type: 'category',
+                data: dates,
+                scale: true,
+                boundaryGap: isOHLC,
+            },
+            yAxis: {
+                scale: true,
+                splitArea: { show: true }
+            },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { show: true, type: 'slider', bottom: '5%', start: 0, end: 100 }
+            ],
+            series: [
+                {
+                    name: 'Stock Price',
+                    type: seriesType,
+                    data: rawData,
+                    smooth: true,
+                    itemStyle: isOHLC ? {
+                        color: '#28a745',
+                        color0: '#dc3545',
+                        borderColor: '#28a745',
+                        borderColor0: '#dc3545'
+                    } : {
+                        color: '#0d6efd' // Blue line if not candlestick
+                    },
+                    areaStyle: isOHLC ? null : {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(13, 110, 253, 0.3)' },
+                            { offset: 1, color: 'rgba(13, 110, 253, 0)' }
+                        ])
+                    }
+                }
+            ]
+        };
+
+        myChart.setOption(option);
+        window.addEventListener('resize', myChart.resize);
+    });
+</script>
+{% endblock %}

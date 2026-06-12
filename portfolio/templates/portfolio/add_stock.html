@@ -1,0 +1,92 @@
+{% extends 'portfolio/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card p-4 mt-4">
+                <h2 class="card-title text-center mb-4">Add New Stock</h2>
+                <p class="text-center text-muted small">
+                    Start typing to search for a ticker. Use <strong>.NS</strong> for NSE or <strong>.BO</strong> for BSE stocks.
+                </p>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <div class="mb-3 position-relative">
+                        <label for="id_ticker" class="form-label requiredField">Ticker<span class="text-danger">*</span></label>
+                        <input type="text" name="ticker" class="form-control {% if form.ticker.errors %}is-invalid{% endif %}" 
+                               placeholder="Start typing to search..." required id="id_ticker" 
+                               value="{{ form.ticker.value|default:'' }}" autocomplete="off">
+                        
+                        <div id="ticker-results" class="list-group mt-1 position-absolute w-100" style="z-index: 1000;"></div>
+                        
+                        {% for error in form.ticker.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    {{ form.quantity|as_crispy_field }}
+                    {{ form.purchase_price|as_crispy_field }}
+                    {{ form.purchase_date|as_crispy_field }}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Stock</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tickerInput = document.getElementById('id_ticker');
+    const resultsContainer = document.getElementById('ticker-results');
+    let searchTimeout;
+
+    const searchTickers = async (query) => {
+        if (query.length < 2) {
+            resultsContainer.innerHTML = '';
+            return;
+        }
+        try {
+            const response = await fetch(`/portfolio/api/search-ticker/?q=${query}`);
+            const data = await response.json();
+            let html = '';
+            data.forEach(stock => {
+                html += `<a href="#" class="list-group-item list-group-item-action list-group-item-dark" data-ticker="${stock.symbol}"><strong class="text-primary">${stock.symbol}</strong> - ${stock.name}</a>`;
+            });
+            resultsContainer.innerHTML = html;
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    };
+
+    tickerInput.addEventListener('input', (event) => {
+        clearTimeout(searchTimeout);
+        const query = event.target.value;
+        searchTimeout = setTimeout(() => searchTickers(query), 300);
+    });
+
+    resultsContainer.addEventListener('click', (event) => {
+        event.preventDefault();
+        const target = event.target.closest('.list-group-item'); 
+        if (target) {
+            tickerInput.value = target.dataset.ticker;
+            resultsContainer.innerHTML = ''; 
+        }
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!resultsContainer.contains(event.target) && event.target !== tickerInput) {
+            resultsContainer.innerHTML = '';
+        }
+    });
+});
+</script>
+{% endblock %}

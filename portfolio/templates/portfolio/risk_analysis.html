@@ -1,0 +1,130 @@
+{% extends 'portfolio/base.html' %}
+{% load humanize %} 
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">How Much Does Your Portfolio Bounce Around? (Risk Analysis)</h2>
+
+    {% if risk_data %}
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <h5 class="card-title text-muted">Overall Portfolio Movement</h5>
+                        {% if portfolio_beta is not None %}
+                            <p class="card-text display-4 fw-bold {% if portfolio_beta > 1.2 %}text-danger{% elif portfolio_beta < 0.8 %}text-success{% else %}text-warning{% endif %}">
+                                {{ portfolio_beta|floatformat:2 }}
+                            </p>
+                            <p class="card-text small text-muted">
+                                (Compared to the Indian Market - Nifty 50 <small>[{{ market_index }}]</small>)
+                            </p>
+                            {% if portfolio_beta > 1.2 %}
+                                <p class="text-danger fw-bold"><i class="bi bi-graph-down-arrow"></i> High Risk: Your portfolio tends to swing much more than the overall market (both up and down).</p>
+                            {% elif portfolio_beta > 1.0 %}
+                                <p class="text-warning fw-bold"><i class="bi bi-arrow-down-up"></i> Medium-High Risk: Your portfolio tends to swing slightly more than the overall market.</p>
+                            {% elif portfolio_beta < 0.8 %}
+                                <p class="text-success fw-bold"><i class="bi bi-graph-up-arrow"></i> Low Risk: Your portfolio tends to swing much less than the overall market.</p>
+                            {% elif portfolio_beta < 1.0 %}
+                                 <p class="text-success fw-bold"><i class="bi bi-arrow-down-up"></i> Medium-Low Risk: Your portfolio tends to swing slightly less than the overall market.</p>
+                            {% else %}
+                                <p class="text-secondary fw-bold"><i class="bi bi-arrow-left-right"></i> Average Risk: Your portfolio tends to move very similarly to the overall market.</p>
+                            {% endif %}
+                        {% else %}
+                             <p class="card-text text-danger fs-4">Could not calculate overall movement.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                     <div class="card-body">
+                         <h5 class="card-title text-muted">What Do These Numbers Mean?</h5>
+                         <p class="small mb-3">
+                             <strong data-bs-toggle="tooltip" title="How much the price jumped up and down over the last year. Higher means bigger jumps.">
+                                 Price Swing <i class="bi bi-info-circle"></i>:
+                             </strong><br>
+                             Think of this like how bumpy the ride has been for this stock's price over the past year. A higher number means more ups and downs (more bumpy).
+                             <br><span class="text-muted fst-italic">(Technical term: Volatility)</span>
+                         </p>
+                          <p class="small">
+                             <strong data-bs-toggle="tooltip" title="Does this stock usually follow the market's trend, or does it do its own thing? > 1 follows strongly, < 1 follows weakly.">
+                                 Market Follower Score <i class="bi bi-info-circle"></i>:
+                             </strong><br>
+                              This compares the stock's swings to the overall Indian market (Nifty 50).
+                              <br>• **Score > 1:** Tends to follow the market's trend but swings even more wildly.
+                              <br>• **Score ≈ 1:** Tends to follow the market's trend closely.
+                              <br>• **Score < 1:** Tends to have smaller swings than the market or move independently.
+                              <br><span class="text-muted fst-italic">(Technical term: Beta)</span>
+                         </p>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                Individual Stock Behavior (Based on past 1 year)
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Stock</th>
+                                <th class="text-end">Share of Your Portfolio</th>
+                                <th class="text-end" data-bs-toggle="tooltip" title="How much the price jumped up and down over the last year. Higher means bigger jumps.">
+                                    Price Swing <i class="bi bi-info-circle-fill"></i>
+                                </th>
+                                <th class="text-end" data-bs-toggle="tooltip" title="Does this stock usually follow the market's trend? > 1 follows strongly, < 1 follows weakly.">
+                                    Market Follower Score <i class="bi bi-info-circle-fill"></i>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in risk_data %}
+                                <tr>
+                                    <td class="fw-bold">{{ item.ticker }}</td>
+                                    <td class="text-end">{{ item.weight|floatformat:1 }}%</td>
+                                    <td class="text-end">
+                                        {% if item.volatility is not None %}
+                                            {{ item.volatility|floatformat:2 }}
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.beta is not None %}
+                                            <span class="fw-bold px-2 py-1 rounded-pill small
+                                                {% if item.beta > 1.2 %} bg-danger-subtle text-danger-emphasis {% elif item.beta < 0.8 %} bg-success-subtle text-success-emphasis {% else %} bg-warning-subtle text-warning-emphasis {% endif %}">
+                                                {{ item.beta|floatformat:2 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <p class="text-muted small mt-3">
+            <strong>Disclaimer:</strong> This analysis is based only on past price movements (last year) and doesn't predict the future. These numbers are estimates and can change. Always do your own research before investing.
+        </p>
+
+    {% elif not messages %} 
+        <div class="card card-body text-center">
+            <p class="text-muted mb-0">Add some stocks to your portfolio, and we'll analyze how much their prices tend to bounce around!</p>
+        </div>
+    {% endif %}
+
+</div>
+
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl)
+    })
+</script>
+{% endblock %}

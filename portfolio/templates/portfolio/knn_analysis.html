@@ -1,0 +1,73 @@
+{% extends 'portfolio/base.html' %}
+
+{% block content %}
+<div id="knn-data" data-score="{{ score|default:0 }}" style="display:none;"></div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0">
+                <div class="card-body text-center p-5">
+                    <h2 class="fw-bold mb-2">KNN Analysis: {{ ticker }}</h2>
+                    <p class="text-muted mb-4">Market state classification based on historical similarity.</p>
+
+                    <div class="position-relative mx-auto my-4" style="width: 200px; height: 100px; overflow: hidden;">
+                        <div
+                            style="width: 200px; height: 200px; border-radius: 50%; border: 15px solid #e9ecef; border-bottom-color: transparent; border-left-color: #dc3545; border-right-color: #198754; transform: rotate(-45deg);">
+                        </div>
+                        <div id="needle" class="position-absolute"
+                            style="bottom: 0; left: 50%; width: 4px; height: 80px; background: #212529; transform-origin: bottom center; transition: transform 1.5s ease-out; transform: translateX(-50%) rotate(0deg);">
+                        </div>
+                    </div>
+
+                    <h1 class="display-4 fw-bold text-{{ color }}">{{ prediction }}</h1>
+                    <p class="h5 text-muted">Model Confidence: {{ confidence|floatformat:0 }}%</p>
+
+                    <hr class="my-4">
+
+                    <h5 class="mb-3">Neighbor Voting (K=5)</h5>
+                    <div class="row g-2">
+                        <div class="col-4">
+                            <div class="p-3 border rounded bg-light">
+                                <small class="text-success d-block">Buy</small>
+                                <span class="h4 fw-bold">{{ buy_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded bg-light">
+                                <small class="text-warning d-block">Hold</small>
+                                <span class="h4 fw-bold">{{ hold_count }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-3 border rounded bg-light">
+                                <small class="text-danger d-block">Sell</small>
+                                <span class="h4 fw-bold">{{ sell_count }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary px-4">Back to Dashboard</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const dataElement = document.getElementById('knn-data');
+        const scoreValue = parseInt(dataElement.getAttribute('data-score'));
+        const needle = document.getElementById('needle');
+
+        // Map -100 to -90deg, 0 to 0deg, 100 to 90deg
+        const rotation = (scoreValue / 100) * 90;
+
+        setTimeout(() => {
+            needle.style.transform = `translateX(-50%) rotate(${rotation}deg)`;
+        }, 300);
+    })();
+</script>
+{% endblock %}
