@@ -145,17 +145,17 @@ chmod +x amazon_linux_setup.sh
 
 ## Screenshots
 ### Home Screen
-![Home Screen](screenshots/Screenshot%2026-06-14%182245.png)
+![Home Screen](Screenshot/home.png)
 ### User dashboard
-![User dashboard](screenshots/Screenshot%2026-06-14%182430.png)
+![User dashboard](Screenshot/sc2.png)
 ### Stock Analysis & Prediction
-![Stock Analysis & Prediction](screenshots/Screenshot%2026-06-14%182538.png)
+![Stock Analysis & Prediction](Screenshot/sc3.png)
 ### Sector Analysis
-![Sector Analysis](screenshots/Screenshot%2026-06-14%182624.png)
+![Sector Analysis](Screenshot/sc4.png)
 ### Risk Analysis
-![Risk Analysis](screenshots/Screenshot%2026-06-14%182818.png)
+![Risk Analysis](Screenshot/sc5.png)
 ### Portfolio Report
-![Portfolio Report](screenshots/Screenshot%2026-06-14%182854.png)
+![Portfolio Report](Screenshot/sc6.png)
 
 These scripts automate system package installations, set up the virtual environment, compile assets, generate Gunicorn systemd configurations, and hook Nginx up to serve static assets and proxy web traffic.
 
